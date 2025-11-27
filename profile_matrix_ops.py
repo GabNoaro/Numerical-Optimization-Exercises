@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+
+import time
+import gc
+import psutil
+import os
+
+def profile_func(func, size_mult=1000, min_range=1, max_range=11):
+    """
+    Profile a function that takes a single integer size as input.
+    
+    For increasing matrix sizes, calls func(size), recording the wall-clock
+    runtime and additional memory usage for each size.
+    
+        Args:
+            func (callable):
+                Function to profile; must accept a single integer size argument.
+            size_mult (int, optional):
+                Multiplier mapping loop index i to problem size i * size_mult.
+            min_range (int, optional):
+                Inclusive starting index for the profiling loop.
+            max_range (int, optional):
+                Exclusive ending index for the profiling loop.
+        
+        Returns:
+            tuple[np.ndarray, np.ndarray]:
+                (resTime, resSpace) arrays with per-size runtime and memory usage.
+    
+    """
+    
+    for i in range(min_range, max_range):
+        gc.collect()
+        start = time.time()
+        size = i * size_mult
+        func(size)
+        ram = process.memory_info().rss
+        end = time.time()
+        resTime[i-1] = end - start
+        resSpace[i-1] = ram - baseRam
+
+    print(f"resTime = \n {resTime}")
+    print(f"resSpace = \n {resSpace}")
+
+    return resTime, resSpace
+
+
+def profile_func_custom(
+    func, A=None, b=None, size_mult=1000, min_range=1, max_range=11):
+    """
+    Profile a linear solver with custom matrix/vector inputs.
+    
+    For each problem size, optionally generates a random linear system,
+    copies A and b to avoid in-place side effects, and times a single call
+    to func(A_copy, b_copy), tracking runtime and memory usage.
+    
+    Args:
+        func (callable):
+            Function to profile; must accept (A, b) as arguments.
+        A (np.ndarray, optional):
+            Coefficient matrix. If None, a random matrix is generated.
+        b (np.ndarray, optional):
+            Right-hand side vector. If None, a random vector is generated.
+        size_mult (int, optional):
+            Multiplier mapping loop index i to problem size i * size_mult
+            when generating random systems.
+        min_range (int, optional):
+            Inclusive starting index for the profiling loop.
+        max_range (int, optional):
+            Exclusive ending index for the profiling loop.
+    
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            (resTime, resSpace) arrays with per-size runtime and memory usage.
+    
+    """
+    
+    sig = inspect.signature(func)
+    accepts_size = "size" in sig.parameters
+
+    for i in range(min_range, max_range):
+        gc.collect()
+
+        if A is None or b is None:
+            size = i * size_mult
+            intA = np.random.randint(-5, 50, (size, size))
+            floatA = np.random.rand(size, size)
+            A = intA + floatA
+            b = np.random.randint(-1, 10, size)
+        
+        # Each iteration may change A and b destructively
+        # So copy input data
+        # Do this for every benchmarked function, for fair cost comparison
+        A_copy = np.copy(A).astype(float)
+        b_copy = np.copy(b).astype(float)
+        
+        start = time.time()
+        
+        func(A_copy, b_copy)
+
+        ram = process.memory_info().rss
+        end = time.time()
+
+        resTime[i-1] = end - start
+        resSpace[i-1] = ram - baseRam
+
+    print(f"resTime = \n{resTime}")
+    print(f"\n")
+    print(f"resSpace = \n{resSpace}")
+
+    return resTime, resSpace
+
+def runCompare_Funcs(func_list, A=None, b=None, size_mult=1000, min_range=1, max_range=11):
+    """
+    Run profiling for a list of solver functions.
+    
+    Iterates over the provided functions, printing a header for each and
+    calling `profile_func_custom` with shared size and range parameters.
+    
+    Args:
+        func_list (list[callable]):
+            List of solver functions, each accepting (A, b).
+        A (np.ndarray, optional):
+            Fixed coefficient matrix, reused across all profiled functions.
+        b (np.ndarray, optional):
+            Fixed right-hand side vector, reused across all profiled functions.
+        size_mult (int, optional):
+            Multiplier mapping loop index i to problem size i * size_mult.
+        min_range (int, optional):
+            Inclusive starting index for the profiling loop.
+        max_range (int, optional):
+            Exclusive ending index for the profiling loop.
+    
+    Returns:
+        None
+    
+    """
+
+    if not isinstance(func_list, list):
+        func_list = [func_list]
+    
+    for func in func_list:
+        print(f"\nProfiling `{func.__name__}`:")
+        print(f"\n") # Create a space below
+
+        # Call profiler with A and b as fixed arguments
+        _, _ = profile_func_custom(
+            func,
+            A=A,
+            b=b,
+            size_mult=size_mult,
+            min_range=min_range,
+            max_range=max_range
+        )
+
+def main():
+    runCompareFuncs(func_list, A=None, b=None, sizemult=1000, minrange=1, maxrange=11)
+
+if __name__ == "__main__":
+    main()
