@@ -5,6 +5,8 @@ import gc
 import psutil
 import os
 
+print("Code available at 'https://github.com/GabNoaro/Numerical-Optimization-Exercises/blob/ea839d0ca45192554490e8addff93e731881e446/profile_matrix_ops.py'.")
+
 def profile_func(func, size_mult=1000, min_range=1, max_range=11):
     """
     Profile a function that takes a single integer size as input.
@@ -39,6 +41,7 @@ def profile_func(func, size_mult=1000, min_range=1, max_range=11):
         resSpace[i-1] = ram - baseRam
 
     print(f"resTime = \n {resTime}")
+    print(f"\n")
     print(f"resSpace = \n {resSpace}")
 
     return resTime, resSpace
@@ -109,7 +112,7 @@ def profile_func_custom(
 
     return resTime, resSpace
 
-def runCompare_Funcs(func_list, A=None, b=None, size_mult=1000, min_range=1, max_range=11):
+def runCompareFuncs(func_list, A=None, b=None, size_mult=1000, min_range=1, max_range=11):
     """
     Run profiling for a list of solver functions.
     
@@ -152,8 +155,86 @@ def runCompare_Funcs(func_list, A=None, b=None, size_mult=1000, min_range=1, max
             max_range=max_range
         )
 
+def profile_generic_func(func, verbose=True, *args, **kwargs):
+    """
+    Profile a function that takes a single integer size as input.
+    
+    For increasing matrix sizes, calls func(size), recording the wall-clock
+    runtime and additional memory usage for each size.
+    
+        Args:
+            func (callable):
+                Function to profile; must accept a single integer size argument.
+            verbose (bool, default:True):
+                Whether to return print statements.
+            *args, **kwargs:
+                Accept profiled function arguments and keyword arguments.
+        
+        Returns:
+            tuple[np.ndarray, np.ndarray]:
+                (resTime, resSpace) arrays with runtime (seconds) and memory usage (bytes).
+        
+    """
+    
+    gc.collect()
+    baseRam = psutil.Process().memory_info().rss
+
+    start = time.perf_counter()
+    func(*args, **kwargs)
+    end = time.perf_counter()
+
+    ram_now = psutil.Process().memory_info().rss
+
+    resTime = end - start
+    resSpace = ram_now - baseRam
+
+    if verbose:
+        print(f"resTime = \n {resTime}")
+        print(f"\n")
+        print(f"resSpace = \n {resSpace}")
+
+    return resTime, resSpace
+
+def runCompareGenericFuncs(func_list, verbose=False, *args, **kwargs):
+    """
+    Run profiling for a list of solver functions.
+    
+    Iterates over the provided functions, printing a header for each and
+    calling `profile_func_custom` with shared size and range parameters.
+    
+    Args:
+        func_list (list[callable]):
+            List of solver functions, each accepting (A, b).
+        verbose (bool, default:False to avoid too many print statements):
+                Whether to return print statements.
+        *args, **kwargs:
+                Accept profiled function arguments and keyword arguments.
+    
+    Returns:
+        Returns:
+            tuple[list[np.ndarray], list[np.ndarray]]:
+                (resTime_list, resSpace_list) List of np.ndarrays with runtime and memory usage for each funciton.
+    
+    """
+
+    if not isinstance(func_list, list):
+        func_list = [func_list]
+
+    results = []
+    for func in func_list:
+        if verbose:
+            print(f"\nProfiling `{func.__name__}`")
+            print(f"\n")
+        res = profile_func_generic(func, *args, **kwargs)
+        results.append(res)
+    return results
+
 def main():
+    profile_func(func, size_mult=1000, min_range=1, max_range=11)
+    profile_func_custom(func, A=None, b=None, size_mult=1000, min_range=1, max_range=11)
     runCompareFuncs(func_list, A=None, b=None, sizemult=1000, minrange=1, maxrange=11)
+    profile_generic_func(func, verbose=True, *args, **kwargs)
+    runCompareGenericFuncs(func_list, verbose=False, *args, **kwargs)
 
 if __name__ == "__main__":
     main()
