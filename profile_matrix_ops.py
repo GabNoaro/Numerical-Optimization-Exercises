@@ -157,10 +157,8 @@ def runCompareFuncs(func_list, A=None, b=None, size_mult=1000, min_range=1, max_
 
 def profile_generic_func(func, verbose=True, *args, **kwargs):
     """
-    Profile a function that takes a single integer size as input.
-    
-    For increasing matrix sizes, calls func(size), recording the wall-clock
-    runtime and additional memory usage for each size.
+    Profile a function recording the wall-clock
+    runtime (s) and memory usage (bytes).
     
         Args:
             func (callable):
@@ -197,7 +195,7 @@ def profile_generic_func(func, verbose=True, *args, **kwargs):
 
 def runCompareGenericFuncs(func_list, verbose=False, *args, **kwargs):
     """
-    Run profiling for a list of solver functions.
+    Run profiling for a list of functions.
     
     Iterates over the provided functions, printing a header for each and
     calling `profile_func_custom` with shared size and range parameters.
