@@ -15,7 +15,6 @@ import time
 import gc
 import os
 import psutil
-process = psutil.Process(os.getpid())
 
 print("Code available at 'https://github.com/GabNoaro/Numerical-Optimization-Exercises/blob/ea839d0ca45192554490e8addff93e731881e446/profile_matrix_ops.py'.")
 
@@ -41,6 +40,8 @@ def profile_func(func, size_mult=1000, min_range=1, max_range=11):
                 (resTime, resSpace) arrays with per-size runtime and memory usage.
     
     """
+
+    process = psutil.Process(os.getpid())
     
     n_points = max_range - min_range
     resTime = np.zeros(n_points)
@@ -94,6 +95,8 @@ def profile_func_custom(
             (resTime, resSpace) arrays with per-size runtime and memory usage.
     
     """
+
+    process = psutil.Process(os.getpid())
     
     n_points = max_range - min_range
     resTime = np.zeros(n_points)
@@ -189,6 +192,8 @@ def profile_func_generic(func, verbose=True, *args, **kwargs):
                 (resTime, resSpace) arrays with runtime (seconds) and memory usage (bytes).
         
     """
+
+    process = psutil.Process(os.getpid())
     
     gc.collect()
     baseRam = psutil.Process().memory_info().rss
@@ -197,7 +202,7 @@ def profile_func_generic(func, verbose=True, *args, **kwargs):
     func(*args, **kwargs)
     end = time.perf_counter()
 
-    ram_now = psutil.Process().memory_info().rss
+    ram_now = process.memory_info().rss
 
     resTime = end - start
     resSpace = ram_now - baseRam
