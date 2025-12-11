@@ -1,9 +1,21 @@
 #!/usr/bin/env python3
 
+"""
+It is advised to import the whole file instead of individual functions, 
+to satisfy all library dependencies. The use of this file is intended 
+for notebook usage (no `main()` function).
+
+Code available at:
+https://github.com/GabNoaro/Numerical-Optimization-Exercises/blob/ea839d0ca45192554490e8addff93e731881e446/profile_matrix_ops.py
+
+"""
+
+import numpy as np
 import time
 import gc
 import psutil
 import os
+process = psutil.Process(os.getpid())
 
 print("Code available at 'https://github.com/GabNoaro/Numerical-Optimization-Exercises/blob/ea839d0ca45192554490e8addff93e731881e446/profile_matrix_ops.py'.")
 
@@ -30,22 +42,28 @@ def profile_func(func, size_mult=1000, min_range=1, max_range=11):
     
     """
     
+    n_points = max_range - min_range
+    resTime = np.zeros(n_points)
+    resSpace = np.zeros(n_points)
+
     for i in range(min_range, max_range):
         gc.collect()
+        baseRam = process.memory_info().rss
+        
         start = time.time()
         size = i * size_mult
         func(size)
         ram = process.memory_info().rss
         end = time.time()
-        resTime[i-1] = end - start
-        resSpace[i-1] = ram - baseRam
 
+        idx = i - min_range
+        resTime[idx] = end - start
+        resSpace[idx] = ram - baseRam
+    
     print(f"resTime = \n {resTime}")
-    print(f"\n")
     print(f"resSpace = \n {resSpace}")
 
     return resTime, resSpace
-
 
 def profile_func_custom(
     func, A=None, b=None, size_mult=1000, min_range=1, max_range=11):
@@ -77,35 +95,33 @@ def profile_func_custom(
     
     """
     
-    sig = inspect.signature(func)
-    accepts_size = "size" in sig.parameters
+    n_points = max_range - min_range
+    resTime = np.zeros(n_points)
+    resSpace = np.zeros(n_points)
 
     for i in range(min_range, max_range):
-        gc.collect()
-
         if A is None or b is None:
             size = i * size_mult
             intA = np.random.randint(-5, 50, (size, size))
             floatA = np.random.rand(size, size)
             A = intA + floatA
             b = np.random.randint(-1, 10, size)
-        
-        # Each iteration may change A and b destructively
-        # So copy input data
-        # Do this for every benchmarked function, for fair cost comparison
+
         A_copy = np.copy(A).astype(float)
         b_copy = np.copy(b).astype(float)
         
-        start = time.time()
+        gc.collect()
+        baseRam = process.memory_info().rss
         
+        start = time.time()
         func(A_copy, b_copy)
-
         ram = process.memory_info().rss
         end = time.time()
 
-        resTime[i-1] = end - start
-        resSpace[i-1] = ram - baseRam
-
+        idx = i - min_range
+        resTime[idx] = end - start
+        resSpace[idx] = ram - baseRam
+    
     print(f"resTime = \n{resTime}")
     print(f"\n")
     print(f"resSpace = \n{resSpace}")
@@ -155,7 +171,7 @@ def runCompareFuncs(func_list, A=None, b=None, size_mult=1000, min_range=1, max_
             max_range=max_range
         )
 
-def profile_generic_func(func, verbose=True, *args, **kwargs):
+def profile_func_generic(func, verbose=True, *args, **kwargs):
     """
     Profile a function recording the wall-clock
     runtime (s) and memory usage (bytes).
@@ -226,13 +242,3 @@ def runCompareGenericFuncs(func_list, verbose=False, *args, **kwargs):
         res = profile_func_generic(func, *args, **kwargs)
         results.append(res)
     return results
-
-def main():
-    profile_func(func, size_mult=1000, min_range=1, max_range=11)
-    profile_func_custom(func, A=None, b=None, size_mult=1000, min_range=1, max_range=11)
-    runCompareFuncs(func_list, A=None, b=None, sizemult=1000, minrange=1, maxrange=11)
-    profile_generic_func(func, verbose=True, *args, **kwargs)
-    runCompareGenericFuncs(func_list, verbose=False, *args, **kwargs)
-
-if __name__ == "__main__":
-    main()
