@@ -13,8 +13,8 @@ https://github.com/GabNoaro/Numerical-Optimization-Exercises/blob/ea839d0ca45192
 import numpy as np
 import time
 import gc
-import psutil
 import os
+import psutil
 process = psutil.Process(os.getpid())
 
 print("Code available at 'https://github.com/GabNoaro/Numerical-Optimization-Exercises/blob/ea839d0ca45192554490e8addff93e731881e446/profile_matrix_ops.py'.")
